@@ -88,8 +88,10 @@ void astree::print (FILE* outfile, astree* tree, int depth) {
    for ( int i=0; i<depth; i++){
       fprintf(outfile, "|  ");
    }
+   const char* tok_name = parser::get_tname (tree->symbol);
+   if(strncmp(tok_name,"TOK_",4) == 0) tok_name = tok_name + 4;
    fprintf (outfile, "%s \"%s\" %zd.%zd.%zd\n",
-            parser::get_tname (tree->symbol), tree->lexinfo->c_str(),
+            tok_name, tree->lexinfo->c_str(),
             tree->lloc.filenr, tree->lloc.linenr, tree->lloc.offset);
    for (astree* child: tree->children) {
       astree::print (outfile, child, depth + 1);
