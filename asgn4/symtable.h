@@ -9,12 +9,14 @@ extern size_t next_block;
 
 struct symbol;
 
-//using symbol_table = unordered_map<string*,symbol*>;
+using symbol_table = unordered_map<const string*,symbol*>;
+extern vector<symbol_table*> symbol_stack;
+
 //using symbol_entry = pair<const string*, symbol*>;
 
 struct symbol{
    attr_bitset attr;
-//   symbol_table* fields;
+   symbol_table* fields;
    location lloc;
    size_t block_nr;
    vector<symbol*>* parameters;

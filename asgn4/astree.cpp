@@ -16,6 +16,7 @@ astree::astree (int symbol_, const location& lloc_, const char* info) {
    symbol = symbol_;
    lloc = lloc_;
    lexinfo = string_set::intern (info);
+   parent = nullptr;
    attr = 0;
    // vector defaults to empty -- no children
 }
@@ -36,12 +37,14 @@ astree::~astree() {
 astree* astree::adopt (astree* child1, astree* child2) {
    //this->peek_node(stderr);
    if (child1 != nullptr){
+      child1->parent = this;
       children.push_back (child1);
      // fprintf(stderr, "\n   Adopts ");
       //child1->peek_node(stderr);
    }
    if (child2 != nullptr){ 
       //fprintf(stderr, "\n      and ");
+      child2->parent = this;
       children.push_back (child2);
       //child2->peek_node(stderr);
    }
