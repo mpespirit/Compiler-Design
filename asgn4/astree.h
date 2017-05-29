@@ -6,6 +6,7 @@
 
 #include <string>
 #include <vector>
+#include <bitset>
 using namespace std;
 
 #include "auxlib.h"
@@ -16,6 +17,15 @@ struct location {
    size_t offset;
 };
 
+enum { ATTR_void, ATTR_char, ATTR_int, ATTR_null,
+  ATTR_string, ATTR_struct, ATTR_array, ATTR_function,
+  ATTR_variable, ATTR_field, ATTR_typeid, ATTR_param,
+  ATTR_lval, ATTR_const, ATTR_vreg, ATTR_vaddr,
+  ATTR_bitset_size,
+};
+
+using attr_bitset = bitset<ATTR_bitset_size>;
+
 struct astree {
 
    // Fields.
@@ -23,6 +33,7 @@ struct astree {
    location lloc;            // source location
    const string* lexinfo;    // pointer to lexical information
    vector<astree*> children; // children of this n-way node
+   attr_bitset attr;
 
    // Functions.
    astree (int symbol, const location&, const char* lexinfo);

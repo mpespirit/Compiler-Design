@@ -24,6 +24,7 @@ constexpr size_t LINESIZE = 1024;
 string command;
 int d_flag = 0; //-D option flag
 char* d_arg; //-D option args
+size_t next_block = 1;
 
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);
