@@ -11,7 +11,7 @@ FLEX      = flex --outfile=${LEXCPP}
 BISON     = bison --defines=${PARSEHDR} --output=${PARSECPP} --xml
 XML2HTML  = xsltproc /usr/share/bison/xslt/xml2xhtml.xsl
 
-MODULES   = astree lyutils string_set auxlib symtable
+MODULES   = astree lyutils string_set auxlib symbol_table
 HDRSRC    = ${MODULES:=.h}
 CPPSRC    = ${MODULES:=.cpp} main.cpp
 FLEXSRC   = scanner.l
