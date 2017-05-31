@@ -25,3 +25,4 @@ struct symbol{
 };
 
 symbol* new_symbol(astree* node);
+void semantic_analysis(astree* node);

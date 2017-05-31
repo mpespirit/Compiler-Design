@@ -18,6 +18,7 @@ using namespace std;
 #include "auxlib.h"
 #include "string_set.h"
 #include "lyutils.h"
+#include "symbol_table.h"
 
 const string CPP = "/usr/bin/cpp";
 constexpr size_t LINESIZE = 1024;
@@ -112,6 +113,9 @@ void cpp_popen(const char* filename){
       char* ast = change_ext(program, ".ast");
       FILE* fAst = fopen(ast, "w");
       astree::print(fAst, parser::root, 0);
+
+      //attempt to build symbol table
+      semantic_analysis(parser::root);
 
       fclose(fStr);
       fclose(fTok);

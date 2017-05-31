@@ -11,18 +11,78 @@
 #include <unordered_map>
 #include <vector>
 #include "symbol_table.h"
-
+#include "yyparse.h"
 // Instead of writing "std::string", we can now just write "string"
 using namespace std;
 FILE* fSym;
 
-symbol* new_symbol(astree* node){
+symbol_table* global;// = new symbol_table;
+
+symbol* new_symbol (astree* node){
    symbol* sym = new symbol();
    sym->lloc = node->lloc;
    sym->block_nr = 0;
    sym->attr = node->attr;
    sym->parameters = nullptr;
    return sym;
+}
+
+void pre_order (astree* node);
+void post_order(astree* node);
+
+/*void insert_sym (symbol_table* st,  astree* node){
+   symbol* s = new_symbol(node);
+   const string* key = const_cast<string*>(node->lexinfo);
+   symbol_entry e = symbol_entry(key, s);
+   if ( st->count(e.first) ) st->erase(e.first);
+   st->insert(e);
+}*/
+
+const string* make_key ( astree* node ){
+   return const_cast<string*>(node->lexinfo);
+}
+
+symbol_entry make_entry(astree* node){
+   symbol* s = new_symbol(node);
+   const string* key = const_cast<string*>(node->lexinfo);
+   return symbol_entry(key, s);
+}
+
+void insert_sym ( symbol_table* st,  symbol_entry e ){
+   if ( st->count(e.first) ) st->erase(e.first);
+   st->insert(e);
+}
+
+void semantic_analysis (astree* node){
+   //pre-order actions
+   pre_order(node);
+   for (astree* child: node->children)
+      semantic_analysis(child);
+   post_order(node);
+}
+
+void insert_struct(astree* node){
+   symbol* s = new_symbol( node );
+   for (size_t i=1; i<node->children.size(); i++){
+      insert_sym( s->fields, 
+                  make_entry( node->children[i] ) );
+   } 
+   const string* key = make_key( node->children[0]);
+   symbol_entry e = symbol_entry( key, s );
+   insert_sym( global, e);
+}
+
+void pre_order (astree* node){
+   switch (node->symbol){
+      case TOK_STRUCT:
+         insert_struct(node);
+         break;
+      default: break;
+   }
+}
+
+void post_order(astree* node){
+
 }
 
 /*

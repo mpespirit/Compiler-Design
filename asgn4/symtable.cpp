@@ -7,7 +7,7 @@ FILE* fSym;
 symbol* new_symbol(astree* node){
    symbol* sym = new symbol();
    sym->lloc = node->lloc;
-   sym->block_nr = 0;
+   sym->block_nr = 0
    sym->attr = node->attr;
    sym->parameters = nullptr;
    return sym;
