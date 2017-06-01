@@ -63,8 +63,10 @@ void semantic_analysis (astree* node){
 }
 
 void print_global ( FILE* file ){
-   for ( auto e = global->begin(); e != global->end(); e++ ){
-      fprintf(file, "%s \n", e->first->c_str() ); 
+   if ( global != nullptr ){
+      for ( auto e = global->begin(); e != global->end(); e++ ){
+         fprintf(file, "%s \n", e->first->c_str() ); 
+      }
    }
 } 
 
@@ -89,7 +91,7 @@ void pre_order (astree* node){
    switch (node->symbol){
       case TOK_STRUCT:
          insert_struct(node);
-         //print_global(stdout);
+         print_global(stdout);
          break;
       default: break;
    }
