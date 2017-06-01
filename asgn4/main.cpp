@@ -28,6 +28,10 @@ char* d_arg; //-D option args
 size_t next_block = 1;
 //symbol_table* global;// = new symbol_table
 
+vector<symbol_table*> symbol_stack;
+vector<size_t> block_stack;
+
+
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);
 void cpp_pclose();
