@@ -104,6 +104,11 @@ submit :
 check : 
 	${GRIND} oc 11-numbers.oc
 
+push :
+	- make rmtests
+	- git add *
+	- git commit
+
 ifeq "${NEEDINCL}" ""
 include ${DEPSFILE}
 endif
