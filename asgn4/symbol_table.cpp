@@ -44,7 +44,7 @@ const string* make_key ( astree* node ){
 
 symbol_entry make_entry(astree* node){
    symbol* s = new_symbol(node);
-   const string* key = const_cast<string*>(node->lexinfo);
+   const string* key = make_key(node);
    return symbol_entry(key, s);
 }
 
@@ -61,12 +61,20 @@ void semantic_analysis (astree* node){
    post_order(node);
 }
 
+void print_global ( FILE* file ){
+   for ( auto e = global->begin(); e != global->end(); e++ ){
+      fprintf(file, "%s \n", e->first->c_str() ); 
+   }
+} 
+
 void insert_struct(astree* node){
    symbol* s = new_symbol( node );
-   for (size_t i=1; i<node->children.size(); i++){
-      insert_sym( s->fields, 
-                  make_entry( node->children[i] ) );
-   } 
+   if ( node->children.size() > 1){
+      for (size_t i=1; i < node->children.size(); i++){
+         //insert_sym( s->fields, 
+         //            make_entry( node->children[i] ) );
+      } 
+   }
    const string* key = make_key( node->children[0]);
    symbol_entry e = symbol_entry( key, s );
    insert_sym( global, e);
@@ -76,6 +84,7 @@ void pre_order (astree* node){
    switch (node->symbol){
       case TOK_STRUCT:
          insert_struct(node);
+         //print_global(stdout);
          break;
       default: break;
    }
