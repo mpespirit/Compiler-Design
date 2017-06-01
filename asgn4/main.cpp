@@ -26,6 +26,7 @@ string command;
 int d_flag = 0; //-D option flag
 char* d_arg; //-D option args
 size_t next_block = 1;
+//symbol_table* global;// = new symbol_table
 
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);

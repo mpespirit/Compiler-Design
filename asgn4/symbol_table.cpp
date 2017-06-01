@@ -51,6 +51,7 @@ symbol_entry make_entry(astree* node){
 void insert_sym ( symbol_table* st,  symbol_entry e ){
    if ( st->count(e.first) ) st->erase(e.first);
    st->insert(e);
+   fprintf(stderr, "Symbol is in global");
 }
 
 void semantic_analysis (astree* node){
@@ -68,15 +69,19 @@ void print_global ( FILE* file ){
 } 
 
 void insert_struct(astree* node){
+   if ( global==nullptr ) global = new symbol_table;
    symbol* s = new_symbol( node );
+   fprintf(stderr, "Made struct symbol \n");
    if ( node->children.size() > 1){
       for (size_t i=1; i < node->children.size(); i++){
-         //insert_sym( s->fields, 
-         //            make_entry( node->children[i] ) );
+         insert_sym( s->fields, 
+                     make_entry( node->children[i] ) );
       } 
    }
    const string* key = make_key( node->children[0]);
+   fprintf(stderr, "Key is \"%s\" \n", key->c_str() ); 
    symbol_entry e = symbol_entry( key, s );
+   fprintf(stderr, "Made entry\n");
    insert_sym( global, e);
 }
 

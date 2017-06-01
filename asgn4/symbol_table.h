@@ -7,6 +7,7 @@
 
 extern size_t next_block;
 extern FILE* fSym;
+//extern symbol_table* global;// = new symbol_table
 
 struct symbol;
 
