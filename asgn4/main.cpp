@@ -30,7 +30,11 @@ size_t next_block = 1;
 vector<symbol_table*> symbol_stack;
 vector<size_t> block_stack;
 
+<<<<<<< HEAD
 // Function Declarations
+=======
+
+>>>>>>> 9f1a245c0c9d02d1d45dda61f99df46a98bcc0b0
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);
 void cpp_pclose();
