@@ -179,6 +179,7 @@ void insert_vardecl(astree* node){
 }
 
 void insert_func(astree* node){
+   node->attr[ATTR_func] = 1;
    symbol* s = new_symbol( node );
    s->block_nr=0;
    const string* key = make_key(node->children[0]->children[0]);
