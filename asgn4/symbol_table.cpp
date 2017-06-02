@@ -10,11 +10,17 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+
+#include <stdio.h>
+#include <string.h>
+
 #include "symbol_table.h"
 #include "yyparse.h"
+
 // Instead of writing "std::string", we can now just write "string"
 using namespace std;
 FILE* fSym;
+bool new_block = false;
 
 symbol_table* global;// = new symbol_table;
 
@@ -51,7 +57,7 @@ symbol_entry make_entry(astree* node){
 void insert_sym ( symbol_table* st,  symbol_entry e ){
    if ( st->count(e.first) ) st->erase(e.first);
    st->insert(e);
-   fprintf(stderr, "Symbol is in global");
+   fprintf(stderr, "Symbol is in global\n");
 }
 
 void semantic_analysis (astree* node){
@@ -62,20 +68,28 @@ void semantic_analysis (astree* node){
    post_order(node);
 }
 
-void print_global ( FILE* file ){
-   if ( global != nullptr ){
-      for ( auto e = global->begin(); e != global->end(); e++ ){
-         fprintf(file, "%s \n", e->first->c_str() ); 
-      }
-   }
-} 
+void print_global ( FILE* file, astree* node ){
+    if ( global != nullptr ){
+        for ( auto e = global->begin(); e != global->end(); e++ ){
+            fprintf(file, "%s (%zu.%zu.%zu) ",
+                    e->first->c_str(), node->lloc.filenr, node->lloc.linenr,
+                    node->lloc.offset);
+            if(strcmp(node->lexinfo->c_str(), "struct") == 0){
+                fprintf(file, "{%s} %s \"%s\" ", "block",
+                        node->lexinfo->c_str(), "meh" );
+            }
+            fprintf(file, "\n");
+        }
+    }
+}
 
 void insert_struct(astree* node){
    if ( global==nullptr ) global = new symbol_table;
    symbol* s = new_symbol( node );
    fprintf(stderr, "Made struct symbol \n");
    if ( node->children.size() > 1){
-      for (size_t i=1; i < node->children.size(); i++){
+      size_t i;
+      for (i=1; i < node->children.size(); i++){
          insert_sym( s->fields, 
                      make_entry( node->children[i] ) );
       } 
@@ -87,18 +101,68 @@ void insert_struct(astree* node){
    insert_sym( global, e);
 }
 
+void insert_vardecl(astree* node){
+   symbol* s = new_symbol( node );
+   const string* key;
+   if ( node->children[0]->symbol==TOK_ARRAY )
+      key = make_key(node->children[0]->children[1]);
+   else
+      key = make_key(node->children[0]->children[0]);
+   s->block_nr = block_stack.back();
+   fprintf(stderr, "%s  %zu  \n", key->c_str(), s->block_nr);
+}
+
+bool has_var( astree* node){
+   bool has = false;
+   if ( !node->children.empty() ){
+      size_t i;
+      for ( i=0; i < node->children.size(); i++){
+         if ( node->children[i]->symbol==TOK_VARDECL )
+             has = true;
+      }
+   }
+   return has;
+}
+
+void enter_block( astree* node ){
+   if ( has_var(node) ){
+      block_stack.push_back( next_block );
+      next_block++;
+      symbol_stack.push_back( new symbol_table );
+   }
+}
+
+void leave_block ( astree* node ){
+   if ( has_var(node) ){
+      block_stack.pop_back();
+      symbol_stack.pop_back();
+   }
+}
+
 void pre_order (astree* node){
-   switch (node->symbol){
+   //fprintf(stderr, "Pre-Order Action:\n");
+   switch( node->symbol ){
       case TOK_STRUCT:
-         insert_struct(node);
-         print_global(stdout);
+         fprintf(stderr, "Found struct\n");
+         insert_struct( node );
+         print_global( fSym, node );
+         break;
+      case TOK_BLOCK:
+         enter_block( node );
+         break;
+      case TOK_VARDECL:
+         insert_vardecl( node ); 
          break;
       default: break;
    }
 }
 
 void post_order(astree* node){
-
+   switch (node->symbol){
+      case TOK_BLOCK:
+         leave_block( node );
+      default: break;
+   }
 }
 
 /*

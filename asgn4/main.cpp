@@ -26,8 +26,11 @@ string command;
 int d_flag = 0; //-D option flag
 char* d_arg; //-D option args
 size_t next_block = 1;
-//symbol_table* global;// = new symbol_table
 
+vector<symbol_table*> symbol_stack;
+vector<size_t> block_stack;
+
+// Function Declarations
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);
 void cpp_pclose();
@@ -101,6 +104,9 @@ void cpp_popen(const char* filename){
       }
       lexer::newfilename (command);
       
+      char* sym = change_ext(program, ".sym");
+      fSym = fopen(sym, "w");
+      
       char* tok = change_ext(program, ".tok");
       fTok = fopen(tok, "w");      
       int pVal = yyparse(); 
@@ -116,11 +122,13 @@ void cpp_popen(const char* filename){
       astree::print(fAst, parser::root, 0);
 
       //attempt to build symbol table
+      block_stack.push_back(0);
       semantic_analysis(parser::root);
 
       fclose(fStr);
       fclose(fTok);
       fclose(fAst);
+      fclose(fSym);
    }
 }
 

@@ -75,9 +75,11 @@ spotless : clean
 	- rm ${EXECBIN}
 
 rmtests : spotless
+	- mv test.oc test
 	- rm *.oc *.oc.err *.oc.out *.str *.tok *.ast oclib.oh 
 	- rm checksource.log gmake.log yyparse.* *.lexyacctrace
-	- rm *.log 
+	- rm *.log *.sym
+	- mv test test.oc
 
 deps : ${ALLCSRC}
 	@ echo "# ${DEPSFILE} created `date` by ${MAKE}" >${DEPSFILE}
@@ -99,7 +101,7 @@ again :
 	gmake --no-print-directory spotless deps ci all lis
 	
 submit : 
-	submit cmps104a-wm.s17 late3 ${SUBMIT}
+	submit cmps104a-wm.s17 late4 ${SUBMIT}
 	
 check : 
 	${GRIND} oc 11-numbers.oc
