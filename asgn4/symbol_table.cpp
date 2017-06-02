@@ -77,7 +77,8 @@ void insert_struct(astree* node){
    symbol* s = new_symbol( node );
    fprintf(stderr, "Made struct symbol \n");
    if ( node->children.size() > 1){
-      for (size_t i=1; i < node->children.size(); i++){
+      size_t i;
+      for (i=1; i < node->children.size(); i++){
          insert_sym( s->fields, 
                      make_entry( node->children[i] ) );
       } 
@@ -90,33 +91,67 @@ void insert_struct(astree* node){
 }
 
 void insert_vardecl(astree* node){
-   if (new_block){
-      block_stack.push_back( next_block++ );
+   symbol* s = new_symbol( node );
+   const string* key;
+   if ( node->children[0]->symbol==TOK_ARRAY )
+      key = make_key(node->children[0]->children[1]);
+   else
+      key = make_key(node->children[0]->children[0]);
+   s->block_nr = block_stack.back();
+   fprintf(stderr, "%s  %zu  \n", key->c_str(), s->block_nr);
+}
+
+bool has_var( astree* node){
+   bool has = false;
+   if ( !node->children.empty() ){
+      size_t i;
+      for ( i=0; i < node->children.size(); i++){
+         if ( node->children[i]->symbol==TOK_VARDECL )
+             has = true;
+      }
+   }
+   return has;
+}
+
+void enter_block( astree* node ){
+   if ( has_var(node) ){
+      block_stack.push_back( next_block );
+      next_block++;
       symbol_stack.push_back( new symbol_table );
    }
-   symbol* s = new_symbol( node );
-   const string* key = make_key( node->children[0] );
-   
+}
+
+void leave_block ( astree* node ){
+   if ( has_var(node) ){
+      block_stack.pop_back();
+      symbol_stack.pop_back();
+   }
 }
 
 void pre_order (astree* node){
-   switch (node->symbol){
+   //fprintf(stderr, "Pre-Order Action:\n");
+   switch( node->symbol ){
       case TOK_STRUCT:
-         insert_struct(node);
-         print_global(stdout);
+         fprintf(stderr, "Found struct");
+         insert_struct( node );
+         print_global( stdout );
          break;
       case TOK_BLOCK:
-         new_block = true;
+         enter_block( node );
          break;
       case TOK_VARDECL:
-         insert_vardecl(node); 
+         insert_vardecl( node ); 
          break;
       default: break;
    }
 }
 
 void post_order(astree* node){
-
+   switch (node->symbol){
+      case TOK_BLOCK:
+         leave_block( node );
+      default: break;
+   }
 }
 
 /*

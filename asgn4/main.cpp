@@ -120,6 +120,7 @@ void cpp_popen(const char* filename){
       astree::print(fAst, parser::root, 0);
 
       //attempt to build symbol table
+      block_stack.push_back( 0 );
       semantic_analysis(parser::root);
 
       fclose(fStr);
