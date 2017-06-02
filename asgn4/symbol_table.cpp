@@ -65,20 +65,20 @@ void semantic_analysis (astree* node){
 string attr_tostring(size_t i){
    switch(i){
       case 0: return "void";
-      case 1: return "char";
-      case 2: return "int";
-      case 3: return "null";
-      case 4: return "string";
-      case 6: return "array";
-      case 7: return "function";
-      case 8: return "variable";
-      case 10: return "typeid";
-      case 11: return "param";
-      case 12: return "lval";
-      case 13: return "const";
-      case 14: return "vreg";
-      case 15: return "vaddr";
-      case 16: return "bitset_size";
+      case 1: return "int";
+      case 2: return "null";
+      case 3: return "string";
+      case 4: return "";
+      case 5: return "array";
+      case 6: return "function";
+      case 7: return "variable";
+      case 9: return "typeid";
+      case 10: return "param";
+      case 11: return "lval";
+      case 12: return "const";
+      case 13: return "vreg";
+      case 14: return "vaddr";
+      case 15: return "bitset_size";
    }
    return "invalid";
 }
@@ -90,19 +90,7 @@ void print_attr(FILE* file, attr_bitset a){
       }
    }
 }
-
 /*
-void print_stack(FILE* file){
-   int i=0;
-   for(;i<symbol_stack.size(); i++){
-      fprintf(file, "%*s", i*3, "");
-      //print_table(file, st);
-      print_table(file, symbol_stack[i]);
-      i++;
-   }
-}
-*/
-
 void print_global ( FILE* file, astree* node ){
    if ( global != nullptr ){
       for ( auto e = global->begin(); e != global->end(); e++ ){
@@ -145,7 +133,7 @@ void print_table( FILE* file, symbol_table* st ){
          fprintf(file, "\n");
       }
    }
-
+*/
 
 void print_entry(FILE* file, symbol_entry e){
    symbol* s = e.second;
@@ -157,6 +145,8 @@ void print_entry(FILE* file, symbol_entry e){
    fprintf(file, "%s (%zu.%zu.%zu) {%zu}",
            e.first->c_str(), filenr, linenr,
            offset, block);
+   if ( s->attr[4] )
+      fprintf(file, " struct \"%s\"", s->struct_ID->c_str());
    print_attr(file, s->attr);
    fprintf(file, "\n");
 }
@@ -193,7 +183,20 @@ void insert_struct(astree* node){
 }
 
 void insert_vardecl(astree* node){
+   node->attr[ATTR_lval] = 1;
+   switch(node->children[0]->symbol){
+      case TOK_VOID:
+         node->attr[ATTR_void] = 1; break;
+      case TOK_INT:
+         node->attr[ATTR_int] = 1; break;
+      case TOK_STRING:
+         node->attr[ATTR_string] = 1; break;
+      case TOK_TYPEID:
+         node->attr[ATTR_struct] = 1; 
+         break;
+   }   
    symbol* s = new_symbol( node );
+   if (s->attr[4]) s->struct_ID=node->children[0]->lexinfo;
    const string* key;
    if ( node->children[0]->symbol==TOK_ARRAY )
       key = make_key(node->children[0]->children[1]);
@@ -218,6 +221,7 @@ void insert_func(astree* node){
          node->attr[ATTR_struct] = 1; break;
    }
    symbol* s = new_symbol( node );
+   if( node->attr[4] ) s->struct_ID = node->children[0]->lexinfo; 
    s->block_nr=0;
    const string* key = make_key(node->children[0]->children[0]);
    symbol_entry e = symbol_entry(key, s);
@@ -298,12 +302,9 @@ void leave_block ( astree* node ){
 
 // action to be taken during *descent* into tree
 void pre_order (astree* node){
-   //fprintf(stderr, "Pre-Order Action:\n");
    switch( node->symbol ){
       case TOK_STRUCT:
-         fprintf(stderr, "Found struct\n");
          insert_struct( node );
-         print_global( fSym, node );
          break;
       case TOK_BLOCK:
          enter_block( node );
@@ -313,6 +314,9 @@ void pre_order (astree* node){
          break;
       case TOK_FUNCTION:
          insert_func( node );
+         break;
+      case TOK_PROTOTYPE:
+         insert_func( node);
          break;
       case TOK_PARAMLIST:
          insert_params( node );

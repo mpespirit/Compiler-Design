@@ -17,7 +17,7 @@ struct location {
    size_t offset;
 };
 
-enum { ATTR_void, ATTR_char, ATTR_int, ATTR_null,
+enum { ATTR_void, ATTR_int, ATTR_null,
   ATTR_string, ATTR_struct, ATTR_array, ATTR_function,
   ATTR_variable, ATTR_field, ATTR_typeid, ATTR_param,
   ATTR_lval, ATTR_const, ATTR_vreg, ATTR_vaddr,
