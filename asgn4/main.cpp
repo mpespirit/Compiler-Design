@@ -123,6 +123,7 @@ void cpp_popen(const char* filename){
 
       //attempt to build symbol table
       block_stack.push_back(0);
+      symbol_stack.push_back( new symbol_table );
       semantic_analysis(parser::root);
 
       fclose(fStr);

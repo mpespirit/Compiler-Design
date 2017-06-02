@@ -7,7 +7,6 @@
 
 extern size_t next_block;
 extern FILE* fSym;
-//extern symbol_table* global;// = new symbol_table
 
 struct symbol;
 
@@ -23,7 +22,10 @@ struct symbol{
    location lloc;
    size_t block_nr;
    vector<symbol*>* parameters;
+   const string* struct_ID;
 };
 
+void print_global(FILE* file, astree* node);
+void print_stack(FILE* file);
 symbol* new_symbol(astree* node);
 void semantic_analysis(astree* node);
