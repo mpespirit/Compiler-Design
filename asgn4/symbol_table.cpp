@@ -51,7 +51,6 @@ symbol_entry make_entry(astree* node){
 void insert_sym ( symbol_table* st,  symbol_entry e ){
    if ( st->count(e.first) ) st->erase(e.first);
    st->insert(e);
-   fprintf(stderr, "Symbol is in global\n");
 }
 
 void semantic_analysis (astree* node){
@@ -87,11 +86,12 @@ string attr_tostring(size_t i){
 void print_attr(FILE* file, attr_bitset a){
    for(size_t i=0; i<16; ++i){
       if(a[i]){
-         fprintf(fSym, " %s", attr_tostring(i).c_str() );
+         fprintf(file, " %s", attr_tostring(i).c_str() );
       }
    }
 }
 
+/*
 void print_stack(FILE* file){
    int i=0;
    for(;i<symbol_stack.size(); i++){
@@ -101,21 +101,36 @@ void print_stack(FILE* file){
       i++;
    }
 }
+*/
 
 void print_global ( FILE* file, astree* node ){
-    if ( global != nullptr ){
-        for ( auto e = global->begin(); e != global->end(); e++ ){
-            fprintf(file, "%s (%zu.%zu.%zu) ",
+   if ( global != nullptr ){
+      for ( auto e = global->begin(); e != global->end(); e++ ){
+         symbol* s = e->second;
+         fprintf(file, "%s (%zu.%zu.%zu) {%zu}",
                     e->first->c_str(), node->lloc.filenr, 
-                    node->lloc.linenr, node->lloc.offset);
-            if(strcmp(node->lexinfo->c_str(), "struct") == 0){
-                fprintf(file, "{%s} %s \"%s\" ", "block",
-                        node->lexinfo->c_str(), "meh" );
-            }
-            fprintf(file, "\n");
-        }
-    }
-}
+                    node->lloc.linenr, node->lloc.offset,
+                    e->second->block_nr);
+         fprintf(file, " struct \"%s\" \n", 
+                 e->second->struct_ID->c_str() );
+         if( s->fields != nullptr ){
+          for ( auto f = s->fields->begin(); f!=s->fields->end(); f++){
+            symbol* t = f->second;
+            fprintf(file, "%s (%zu.%zu.%zu) ",
+                    f->first->c_str(), t->lloc.filenr,
+                    t->lloc.linenr, t->lloc.offset);
+            fprintf(file, " field {%s} \n",
+                 e->first->c_str() );
+          } 
+         }
+         //if(strcmp(node->lexinfo->c_str(), "struct") == 0){
+         //   fprintf(file, "{%s} %s \"%s\" ", "block",
+         //           node->lexinfo->c_str(), "meh" );
+         }
+         fprintf(file, " \n");
+      }
+   }
+
 
 void print_table( FILE* file, symbol_table* st ){
       for ( auto e = st->begin(); e != st->end(); e++ ){
@@ -138,7 +153,7 @@ void print_entry(FILE* file, symbol_entry e){
    size_t linenr = s->lloc.linenr;
    size_t offset = s->lloc.offset;
    size_t block = s->block_nr;
-   fprintf(file, "%*s", depth*3, "");
+   fprintf(file, "%*s", ((int)depth)*3, "");
    fprintf(file, "%s (%zu.%zu.%zu) {%zu}",
            e.first->c_str(), filenr, linenr,
            offset, block);
@@ -148,19 +163,32 @@ void print_entry(FILE* file, symbol_entry e){
 
 void insert_struct(astree* node){
    if ( global==nullptr ) global = new symbol_table;
+   node->attr[ATTR_struct]=1;
    symbol* s = new_symbol( node );
-   fprintf(stderr, "Made struct symbol \n");
+   s->block_nr=0;
+   const string* key = make_key( node->children[0]);
+   s->struct_ID=key;
+   fprintf(fSym, "%s (%zu.%zu.%zu) {%zu}",
+                    key->c_str(), s->lloc.filenr,
+                    s->lloc.linenr, s->lloc.offset,
+                    s->block_nr);
+         fprintf(fSym, " struct \"%s\" \n",
+                 key->c_str() );
    if ( node->children.size() > 1){
       size_t i;
       for (i=1; i < node->children.size(); i++){
+         const string* kex = make_key(node->children[i]);
+         symbol* t = new_symbol(node->children[i]);
+         fprintf(fSym, "%s (%zu.%zu.%zu) ",
+                    kex->c_str(), t->lloc.filenr,
+                    t->lloc.linenr, t->lloc.offset);
+         fprintf(fSym, " field {%s} \n",
+                 key->c_str() );
          insert_sym( s->fields, 
-                     make_entry( node->children[i] ) );
+                     symbol_entry( kex, t ) );
       } 
    }
-   const string* key = make_key( node->children[0]);
-   fprintf(stderr, "Key is \"%s\" \n", key->c_str() ); 
    symbol_entry e = symbol_entry( key, s );
-   fprintf(stderr, "Made entry\n");
    insert_sym( global, e);
 }
 
@@ -173,22 +201,28 @@ void insert_vardecl(astree* node){
       key = make_key(node->children[0]->children[0]);
    s->block_nr = block_stack.back();
    symbol_entry e = symbol_entry(key, s);
-   fprintf(stderr, "About to insert.\n");
    insert_sym( symbol_stack.back(), e );
    print_entry(fSym, e);
 }
 
 void insert_func(astree* node){
-   node->attr[ATTR_func] = 1;
+   node->attr[ATTR_function] = 1;
+   switch(node->children[0]->symbol){
+      case TOK_VOID: 
+         node->attr[ATTR_void] = 1; break;
+      case TOK_INT:
+         node->attr[ATTR_int] = 1; break;
+      case TOK_STRING:
+         node->attr[ATTR_string] = 1; break;
+      case TOK_TYPEID:
+         node->attr[ATTR_struct] = 1; break;
+   }
    symbol* s = new_symbol( node );
    s->block_nr=0;
    const string* key = make_key(node->children[0]->children[0]);
    symbol_entry e = symbol_entry(key, s);
    insert_sym( symbol_stack.back(), e);
    print_entry(fSym, e);
-   astree* temp = node;
-   //for(temp=node; temp->children.size()>0; temp=temp->children[0]){
-   //}
 }
 
 void insert_params(astree* node){
