@@ -95,7 +95,6 @@ void print_attr(FILE* file, attr_bitset a){
 void print_stack(FILE* file){
    int i=0;
    for(;i<symbol_stack.size(); i++){
-   //for(auto st = symbol_stack.begin(); st != symbol_stack.end(); st++){
       fprintf(file, "%*s", i*3, "");
       //print_table(file, st);
       print_table(file, symbol_stack[i]);
@@ -107,8 +106,8 @@ void print_global ( FILE* file, astree* node ){
     if ( global != nullptr ){
         for ( auto e = global->begin(); e != global->end(); e++ ){
             fprintf(file, "%s (%zu.%zu.%zu) ",
-                    e->first->c_str(), node->lloc.filenr, node->lloc.linenr,
-                    node->lloc.offset);
+                    e->first->c_str(), node->lloc.filenr, 
+                    node->lloc.linenr, node->lloc.offset);
             if(strcmp(node->lexinfo->c_str(), "struct") == 0){
                 fprintf(file, "{%s} %s \"%s\" ", "block",
                         node->lexinfo->c_str(), "meh" );
@@ -295,18 +294,3 @@ void post_order(astree* node){
    }
 }
 
-/*
-int main(int argc, char** argv) {
-  symbol_table global;
-  string* keyA = new string("Key A");
-  symbol* a = new symbol();
-  // You can turn single attributes flags on by assigning true (1) to the bit
-  a->attributes[ATTR_void] = true;
-  // You can use the symbol table (unordered_map) like an associative array
-  global[keyA] = a;
-  // Accessing symbols in the symbol table and checking attributes...
-  if (global[keyA]->attributes[ATTR_void]) {
-    cout << "Symbol has 'void' attribute" << endl;
-  }
-}
-*/

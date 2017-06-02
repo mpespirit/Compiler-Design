@@ -18,3 +18,6 @@ Spenser Estrada spent 15 hours driving.
 
 Please grade the work submitted by spmestra@ucsc.edu
 and not the work submitted by mespirit@ucsc.edu
+
+Type-checking not fully implemented. Some divergence
+from desired printing observed. AST incompletely modified.
