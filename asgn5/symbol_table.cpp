@@ -23,8 +23,11 @@ FILE* fSym;
 bool new_block = false;
 size_t depth = 0;
 
-symbol_table* global;// = new symbol_table;
+// this is where to put struct symbols and their fields
+symbol_table* global;
 
+// a symbol has most of the same fields as AST node
+// Also has block number and parameters (i.e., of a function) 
 symbol* new_symbol (astree* node){
    symbol* sym = new symbol();
    sym->lloc = node->lloc;
@@ -34,25 +37,32 @@ symbol* new_symbol (astree* node){
    return sym;
 }
 
+// just moving these up so later funcctions can see them
 void pre_order (astree* node);
 void post_order(astree* node);
 void print_table(FILE* file, symbol_table* st);
 
+// makes a constant string "key" from AST nodes lexigraphic info
 const string* make_key ( astree* node ){
    return const_cast<string*>(node->lexinfo);
 }
 
+// makes a symbol table entry from AST node
+// Not mandatory to make an entry thus, but is often convenient
 symbol_entry make_entry(astree* node){
    symbol* s = new_symbol(node);
    const string* key = make_key(node);
    return symbol_entry(key, s);
 }
 
+// preferred and safe way to insert a symbol into table
 void insert_sym ( symbol_table* st,  symbol_entry e ){
    if ( st->count(e.first) ) st->erase(e.first);
    st->insert(e);
 }
 
+// depth-first traversal of AST
+// This function is the main purpose for this file
 void semantic_analysis (astree* node){
    //pre-order actions
    pre_order(node);
@@ -62,6 +72,8 @@ void semantic_analysis (astree* node){
    post_order(node);
 }
 
+// Maps the entries of the attribute bitset to a string 
+// Supports print_attr() below
 string attr_tostring(size_t i){
    switch(i){
       case 0: return "void";
@@ -83,6 +95,8 @@ string attr_tostring(size_t i){
    return "invalid";
 }
 
+// Runs through attribute bitset in symbol or AST node
+// Prints appropriate string for "true" attributes
 void print_attr(FILE* file, attr_bitset a){
    for(size_t i=0; i<16; ++i){
       if(a[i]){
@@ -90,51 +104,8 @@ void print_attr(FILE* file, attr_bitset a){
       }
    }
 }
-/*
-void print_global ( FILE* file, astree* node ){
-   if ( global != nullptr ){
-      for ( auto e = global->begin(); e != global->end(); e++ ){
-         symbol* s = e->second;
-         fprintf(file, "%s (%zu.%zu.%zu) {%zu}",
-                    e->first->c_str(), node->lloc.filenr, 
-                    node->lloc.linenr, node->lloc.offset,
-                    e->second->block_nr);
-         fprintf(file, " struct \"%s\" \n", 
-                 e->second->struct_ID->c_str() );
-         if( s->fields != nullptr ){
-          for ( auto f = s->fields->begin(); f!=s->fields->end(); f++){
-            symbol* t = f->second;
-            fprintf(file, "%s (%zu.%zu.%zu) ",
-                    f->first->c_str(), t->lloc.filenr,
-                    t->lloc.linenr, t->lloc.offset);
-            fprintf(file, " field {%s} \n",
-                 e->first->c_str() );
-          } 
-         }
-         //if(strcmp(node->lexinfo->c_str(), "struct") == 0){
-         //   fprintf(file, "{%s} %s \"%s\" ", "block",
-         //           node->lexinfo->c_str(), "meh" );
-         }
-         fprintf(file, " \n");
-      }
-   }
 
-
-void print_table( FILE* file, symbol_table* st ){
-      for ( auto e = st->begin(); e != st->end(); e++ ){
-         symbol* s = e->second;
-         size_t filenr = s->lloc.filenr;
-         size_t linenr = s->lloc.linenr;
-         size_t offset = s->lloc.offset;
-         size_t block = s->block_nr;   
-         fprintf(file, "%s (%zu.%zu.%zu) {%zu}",
-                    e->first->c_str(), filenr, linenr,
-                    offset, block);
-         fprintf(file, "\n");
-      }
-   }
-*/
-
+// Turns a symbol table entry into a string for printing
 void print_entry(FILE* file, symbol_entry e){
    symbol* s = e.second;
    size_t filenr = s->lloc.filenr;
@@ -151,21 +122,30 @@ void print_entry(FILE* file, symbol_entry e){
    fprintf(file, "\n");
 }
 
+// Function for insertion of struct to global symbol table
+// Inserts fields as appropriate
 void insert_struct(astree* node){
+   // need table to exist 
    if ( global==nullptr ) global = new symbol_table;
+   // node gets struct attribute
    node->attr[ATTR_struct]=1;
    symbol* s = new_symbol( node );
+   // structs are all in block zero
    s->block_nr=0;
    const string* key = make_key( node->children[0]);
+   // often need to print appropriate struct name
    s->struct_ID=key;
+   // prints newly created entry in specified format
    fprintf(fSym, "%s (%zu.%zu.%zu) {%zu}",
                     key->c_str(), s->lloc.filenr,
                     s->lloc.linenr, s->lloc.offset,
                     s->block_nr);
          fprintf(fSym, " struct \"%s\" \n",
                  key->c_str() );
+   // need to insert fields if present
    if ( node->children.size() > 1){
       size_t i;
+      // inserts/prints fields basically same way as struct itself
       for (i=1; i < node->children.size(); i++){
          const string* kex = make_key(node->children[i]);
          symbol* t = new_symbol(node->children[i]);
@@ -178,6 +158,7 @@ void insert_struct(astree* node){
                      symbol_entry( kex, t ) );
       } 
    }
+   // struct w/ fields inserted into global table
    symbol_entry e = symbol_entry( key, s );
    insert_sym( global, e);
 }
@@ -325,6 +306,7 @@ void pre_order (astree* node){
    }
 }
 
+// actions to be taken during *ascent* through tree
 void post_order(astree* node){
    switch (node->symbol){
       case TOK_BLOCK:
