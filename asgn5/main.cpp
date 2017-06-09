@@ -19,6 +19,7 @@ using namespace std;
 #include "string_set.h"
 #include "lyutils.h"
 #include "symbol_table.h"
+#include "emitter.h"
 
 const string CPP = "/usr/bin/cpp";
 constexpr size_t LINESIZE = 1024;
