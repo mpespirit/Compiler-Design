@@ -5,6 +5,8 @@
 
 #include "astree.h"
 
+extern FILE* fAss;
+
 void emit_sm_code (astree*);
 
 #endif

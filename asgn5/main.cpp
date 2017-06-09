@@ -122,10 +122,16 @@ void cpp_popen(const char* filename){
       FILE* fAst = fopen(ast, "w");
       astree::print(fAst, parser::root, 0);
 
+      // assembly language .oil file
+      char* ass = change_ext(program, ".oil");
+      FILE* fAss = fopen(ass, "w");
+
       //attempt to build symbol table
       block_stack.push_back(0);
       symbol_stack.push_back( new symbol_table );
       semantic_analysis(parser::root);
+
+      emit_sm_code (parse::root); 
 
       fclose(fStr);
       fclose(fTok);
