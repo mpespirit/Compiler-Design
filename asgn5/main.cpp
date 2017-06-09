@@ -123,15 +123,20 @@ void cpp_popen(const char* filename){
       astree::print(fAst, parser::root, 0);
 
       // assembly language .oil file
-      char* ass = change_ext(program, ".oil");
-      FILE* fAss = fopen(ass, "w");
+      char* oil = change_ext(program, ".oil");
+      fOil = fopen(oil, "w");
+ 
+      // print .oil prolog first, structs printed to .oil
+      // during symbol table build
+      emit_prolog();
 
       //attempt to build symbol table
       block_stack.push_back(0);
       symbol_stack.push_back( new symbol_table );
       semantic_analysis(parser::root);
 
-      emit_sm_code (parse::root); 
+      emit_stringcon (parser::root);
+      emit_sm_code (parser::root); 
 
       fclose(fStr);
       fclose(fTok);

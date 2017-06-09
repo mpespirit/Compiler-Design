@@ -5,9 +5,11 @@
 
 #include "astree.h"
 
-extern FILE* fAss;
+extern FILE* fOil;
 
-void emit_sm_code (astree*);
+void emit_stringcon (astree* tree);
+void emit_prolog ();
+void emit_sm_code ( astree* node);
 
 #endif
 

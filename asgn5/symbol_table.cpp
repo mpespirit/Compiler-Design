@@ -16,6 +16,7 @@
 
 #include "symbol_table.h"
 #include "yyparse.h"
+#include "emitter.h"
 
 // Instead of writing "std::string", we can now just write "string"
 using namespace std;
@@ -135,6 +136,10 @@ void insert_struct(astree* node){
    const string* key = make_key( node->children[0]);
    // often need to print appropriate struct name
    s->struct_ID=key;
+   
+   // while we're on the topic, let's print to .oil
+   fprintf(fOil, "struct s_%s {\n", key->c_str() ); 
+
    // prints newly created entry in specified format
    fprintf(fSym, "%s (%zu.%zu.%zu) {%zu}",
                     key->c_str(), s->lloc.filenr,
@@ -144,11 +149,16 @@ void insert_struct(astree* node){
                  key->c_str() );
    // need to insert fields if present
    if ( node->children.size() > 1){
-      size_t i;
+      s->fields=new symbol_table;
       // inserts/prints fields basically same way as struct itself
-      for (i=1; i < node->children.size(); i++){
-         const string* kex = make_key(node->children[i]);
-         symbol* t = new_symbol(node->children[i]);
+      astree* temp = node->children[1];
+      while (true){// temp->children.size()>1; temp=temp->children[1]){
+         const string* kex = make_key(temp->children[0]);
+         symbol* t = new_symbol(temp);
+         
+         // .oil print
+          
+
          fprintf(fSym, "%s (%zu.%zu.%zu) ",
                     kex->c_str(), t->lloc.filenr,
                     t->lloc.linenr, t->lloc.offset);
@@ -156,11 +166,14 @@ void insert_struct(astree* node){
                  key->c_str() );
          insert_sym( s->fields, 
                      symbol_entry( kex, t ) );
+         if (temp->children.size()<2) break;
+         temp=temp->children[1];
       } 
    }
    // struct w/ fields inserted into global table
    symbol_entry e = symbol_entry( key, s );
    insert_sym( global, e);
+   fprintf(fOil, "};\n");
 }
 
 void insert_vardecl(astree* node){

@@ -78,7 +78,7 @@ rmtests : spotless
 	- mv test.oc test
 	- rm *.oc *.oc.err *.oc.out *.str *.tok *.ast oclib.oh 
 	- rm checksource.log gmake.log yyparse.* *.lexyacctrace
-	- rm *.log *.sym
+	- rm *.log *.sym *.oil
 	- mv test test.oc
 
 deps : ${ALLCSRC}

@@ -8,7 +8,10 @@
 #include "auxlib.h"
 #include "lyutils.h"
 
-FILE* fAss;
+FILE* fOil;
+
+// counters for variables
+int string_ct = 1;
 
 void emit (astree* root);
 
@@ -75,11 +78,26 @@ void emit (astree* tree) {
    }
 }
 
-void emit_sm_code (astree* tree) {
+
+void emit_prolog(){
    printf ("\n");
-   // have to emit these first of all
-   fprintf(fAss, "#define __OCLIB_C__\n");
-   fprintf(fAss, "#include \"oclib.oh\"");
-   if (tree) emit (tree);
+   //have to emit these first of all
+   fprintf(fOil, "#define __OCLIB_C__\n");
+   fprintf(fOil, "#include \"oclib.oh\"\n");
+}
+
+void emit_stringcon( astree* tree ){
+   if(tree->symbol==TOK_STRINGCON){
+      fprintf(fOil, "char* s%d = %s;\n", string_ct,
+                     tree->lexinfo->c_str() );
+      string_ct++;
+   }
+   for (astree* child: tree->children){
+      emit_stringcon(child);
+   }
+}
+
+void emit_sm_code ( astree* tree) {
+   //if (tree) emit (tree);
 }
 

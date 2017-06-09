@@ -62,17 +62,15 @@ structdef : TOK_STRUCT TOK_IDENT '{' '}'
                                                 $$=$1->adopt($2,$4); }
           ;
 
-fdecls    : fdecls fdecl ';'        
-                                                      { destroy($3); 
-                                                   $$=$1->adopt($2); }
-          | fdecl                                           { $$=$1; }
+fdecls    : fdecl fdecls                        { $$=$1->adopt($2); }
+          | fdecl                                          { $$=$1; } 
           ;
 
-fdecl     : basetype TOK_IDENT               
-                                             { $2->symbol=TOK_FIELD;
+fdecl     : basetype TOK_IDENT ';'                    { destroy($3);   
+                                               $2->symbol=TOK_FIELD;
                                                    $$=$1->adopt($2); }
-          | basetype TOK_ARRAY TOK_IDENT    
-                                             { $3->symbol=TOK_FIELD; 
+          | basetype TOK_ARRAY TOK_IDENT ';'          { destroy($4);   
+                                               $3->symbol=TOK_FIELD; 
                                                 $$=$2->adopt($1,$3); }
           ;                  
 
