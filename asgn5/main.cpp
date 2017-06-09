@@ -136,6 +136,7 @@ void cpp_popen(const char* filename){
       semantic_analysis(parser::root);
 
       emit_stringcon (parser::root);
+      emit_global (parser::root);
       emit_sm_code (parser::root); 
 
       fclose(fStr);

@@ -173,6 +173,7 @@ void insert_struct(astree* node){
    // struct w/ fields inserted into global table
    symbol_entry e = symbol_entry( key, s );
    insert_sym( global, e);
+
    fprintf(fOil, "};\n");
 }
 

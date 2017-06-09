@@ -101,7 +101,7 @@ again :
 	gmake --no-print-directory spotless deps ci all lis
 	
 submit : 
-	submit cmps104a-wm.s17 late4 ${SUBMIT}
+	submit cmps104a-wm.s17 asg5 ${SUBMIT}
 	
 check : 
 	${GRIND} oc 11-numbers.oc

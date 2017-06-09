@@ -7,6 +7,7 @@
 #include "emitter.h"
 #include "auxlib.h"
 #include "lyutils.h"
+#include "symbol_table.h"
 
 FILE* fOil;
 
@@ -84,6 +85,30 @@ void emit_prolog(){
    //have to emit these first of all
    fprintf(fOil, "#define __OCLIB_C__\n");
    fprintf(fOil, "#include \"oclib.oh\"\n");
+}
+
+void emit_global(astree* tree){
+   for (astree* child: tree->children){
+      if ( child->symbol==TOK_VARDECL){
+         astree* var = child->children[0];
+         switch (var->symbol){
+            case TOK_TYPEID:
+               fprintf(fOil, "s_%s __%s;\n", 
+                      var->lexinfo->c_str(),
+                      var->children[0]->lexinfo->c_str() );
+               break;
+            case TOK_INT:
+               fprintf(fOil, "int __%s;\n",
+                       var->children[0]->lexinfo->c_str() );
+               break;
+            case TOK_STRING:
+               fprintf(fOil, "char* __%s;\n",
+                       var->children[0]->lexinfo->c_str() );
+               break;
+            default: break;
+         } 
+      }
+   }
 }
 
 void emit_stringcon( astree* tree ){

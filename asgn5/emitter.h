@@ -7,6 +7,7 @@
 
 extern FILE* fOil;
 
+void emit_global(astree* tree);
 void emit_stringcon (astree* tree);
 void emit_prolog ();
 void emit_sm_code ( astree* node);
