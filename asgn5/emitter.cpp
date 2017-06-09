@@ -122,7 +122,20 @@ void emit_stringcon( astree* tree ){
    }
 }
 
+
+
 void emit_sm_code ( astree* tree) {
-   //if (tree) emit (tree);
+   for (astree* child: tree->children){
+      emit_sm_code(child);
+   }
+   if (tree->symbol==TOK_WHILE){
+      size_t linenr = tree->lloc.linenr;
+      size_t filenr = tree->lloc.filenr;
+      size_t offset = tree->lloc.offset;   
+      fprintf(fOil, "while_%zu_%zu_%zu:;\n", 
+              filenr, linenr, offset );
+      
+   }
 }
+
 
