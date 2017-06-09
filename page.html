@@ -1,0 +1,137 @@
+<div data-pats="text" class="post_region_text"><p><strong>Preface</strong></p>
+<p>&nbsp;</p>
+<p>As usual, the authoritative assignment description can be found in the class directory. It's very detailed and thorough, so together with the student answer above, you should have enough information to work on this project.</p>
+<p>&nbsp;</p>
+<p>That being said, redundancy and rephrasing of instructions sometimes help to understand complex concepts, so I will give an additional summary here from my own perspective. I guess this might be more important for this particular assignment, because it is by far the most complex and difficult of all projects in this class (assignment 5 will probably be a bit simpler again).<br><br><strong>Outline</strong></p>
+<p>&nbsp;</p>
+<p>The reason why this assignment is so complex is that it's actually combining three steps of a compilation in one project:</p>
+<p>&nbsp;</p>
+<ol><li>Collecting information about user-defined names to determine which variable/function/struct/field is referenced</li><li>Annotating all AST nodes in the program with attributes denoting its types and other metadata</li><li>Ensuring that no typing rule is violated and printing corresponding type error messages</li></ol>
+<p>&nbsp;</p>
+<p>You <em>could</em> actually implement these as 3 individual passes over the AST where each step relies on the previous one. However, I would recommend combining all three into one single pass, i.e. one single AST traversal.</p>
+<p>&nbsp;</p>
+<p><strong>Step 0a: Adding Definitions</strong><br><br>First, you should add definitions for attributes and symbols to a header file. You can either create a new file or use something like <tt>astree.h</tt>. These definitions are actually given in the assignment itself. The following (bogus) example illustrates how to get and set entries in the attribute bitset and the symbol_table map with the indexing operator.</p>
+<p>&nbsp;</p>
+<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;white-space: pre-wrap;word-wrap: break-word;">symbol_table global;
+string* keyA = new string("Key A");
+symbol* a = new symbol();
+// You can turn single attributes flags on by assigning true (1) to the bit
+a-&gt;attributes[ATTR_void] = true;
+// You can use the symbol table (unordered_map) like an associative array
+global[keyA] = a;
+// Accessing symbols in the symbol table and checking attributes...
+if (global[keyA]-&gt;attributes[ATTR_void]) {
+  cout &lt;&lt; "Symbol has 'void' attribute" &lt;&lt; endl;
+}</pre>
+<p><br>Additionally, you need to add a few other definitions for global variables such as the symbol table stack, the block number stack, the table of structure, a block number counter, a reference to the current function node (for checking return statements) and of course the <tt>.sym</tt> file to print to.</p>
+<p>&nbsp;</p>
+<p><strong>Step 0b: Basic AST traversal</strong></p>
+<p>&nbsp;</p>
+<p>We will assume that everything is done as part of one single AST traversal. This means that we are going to use a recursive function that calls itself for each child node of an AST node. The function will perform different actions depending on the type of the node. Therefore, we will need a switch statement that has a case for each possible symbol/node type that could appear in the program. You can either use a huge switch statement that includes all the code or you could add separate functions for each token and call the appropriate function (both approaches are equivalent).</p>
+<p>&nbsp;</p>
+<p>It is probably possible to do the analysis entirely as a post-order traversal but there are a few exceptions which might be easier to handle by performing pre-order actions. For example, a function definition needs to add its symbol with return type and parameter types to the symbol table stack <em>before</em> processing its body in order to correctly typecheck recursive calls and return statements.</p>
+<p>&nbsp;</p>
+<p>Here is a rough skeleton for such a traversal function (again, this could also be implemented differently such as using function dispatch for types):</p>
+<p>&nbsp;</p>
+<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;white-space: pre-wrap;word-wrap: break-word;">void semantic_analysis(astree* node) {
+
+  // ---- pre-order actions ----
+  switch (node-&gt;symbol) {
+    case TOK_FUNCTION: {
+      ...
+      break;
+    }
+    ...
+  }
+
+  // ---- process child nodes ----
+  for (astree* child: node-&gt;children) {
+    semantic_analysis(child);
+  }
+
+  // ---- post-order actions ----
+  switch (node-&gt;symbol) {
+    case TOK_IDENT: {
+      ...
+      break;
+    }
+    ...
+  }
+}</pre>
+<p>&nbsp;</p>
+<p><strong>Step 1: Resolving Names</strong><br><br></p>
+<p>There are three different categories of user-defined names in the program that reference their definition:<br><br>A) Identifiers (variable names) references a variable declaration or function<br>B) Struct type names reference a struct definition<br>C) Field names reference a field declaration in a struct<br><br>These are completely separate namespaces, so it's possible to have a struct "<tt>foo</tt>" and a variable with the same name "<tt>foo</tt>" and these names would <em>not</em> clash. To implement this, you will need three different kinds of symbol tables and code for adding new definitions and looking up names.<br><br><strong>Step 1A: Variable names</strong></p>
+<p>&nbsp;</p>
+<p>The symbol table for variables and functions is actually a <em>stack</em> of symbol tables where each block and function in the program has its own table. Since blocks can be nested, an inner block could include identifiers that reference variables that are defined in an outer surrounding block, i.e. higher up in the symbol table stack.<br><br>When encountering a variable declaration, you need to add a new entry to the top-most symbol table on the stack. Since we are allocating these lazily, the topmost symbol table might be a null pointer, in which case you need to first create a new symbol table and a new/fresh block number and push both to their respective stacks. Every variable declaration also has a node that denotes the intended type. However, this type will either be some keyword such as <tt>TOK_INT</tt>, named type or even an array of these possible basetype. Therefore, you will need some way of converting this "type" node into a symbol which can then be stored into the top symbol table.</p>
+<p>&nbsp;</p>
+<p>When encountering an identifier, you will then try to look up the the variable by starting with the topmost stack and proceeding until some entry can be found in which case the attributes of the symbol will be copied to the identifier node. Here is a sketch of this functionality:</p>
+<p>&nbsp;</p>
+<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;white-space: pre-wrap;word-wrap: break-word;">symbol* symbol_for_type(astree* node, bool isArray) {
+  ...
+}
+
+symbol* lookup(const string* name, bool optional = false) {
+  ...
+}
+
+void semantic_analysis(astree* node) {
+  ...
+  case TOK_VARDECL: {
+&nbsp;&nbsp;&nbsp; // convert type in identdecl to symbol
+&nbsp;&nbsp;&nbsp; // add symbol to top of symbol stack
+&nbsp;&nbsp;&nbsp; ...
+&nbsp; case TOK_IDENT: {
+&nbsp;&nbsp;&nbsp; // lookup name
+&nbsp;&nbsp;&nbsp; // copy attributes
+    ...
+  ...
+}</pre>
+<p>&nbsp;</p>
+<p><strong>Step 1B+C: Structures and Fields</strong></p>
+<p>&nbsp;</p>
+<p>In addition to the symbol table stack for variables (and functions), there is one single global table which includes all the structures defined in the program. Whenever encountering a structure definition, you need to add a new entry to this global structure table. This entry should point to a new symbol table specifically for this struct that includes its fields as entries. Now, whenever encountering a <tt>TOK_TYPEID</tt>, you should look up the name in the global structure table to see whether a structure with that name exists and to return the right pointer to its field table. For example, this could be done as part of the <tt>symbol_for_type</tt> function above. Finally, a reference to a field will always be part of an access operation with a dot ('.'). This means that the node left of the dot (the first child node) should be a structure (i.e. have the <tt>ATTR_struct</tt> bit set to 1) and point to a structure table. In this table, you can now lookup the field to determine the right result type of the field access operation.</p>
+<p>&nbsp;</p>
+<p>The following diagram illustrates these different symbol tables and how different names used in the program reference and declare variables, structs and fields:</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><img src="https://d1b10bmlvqabco.cloudfront.net/attach/j0snpkq8qea33b/hmo4gdmyp2h25e/j3183pve9ht3/symboltablediagram.png" alt="Name resolution"></p>
+<p>&nbsp;</p>
+<p>Finally, whenever you add a new entry to a symbol table, you should also print an appropriate line to the the <tt>.sym</tt> file. Structs will always be global but for variable declarations you should use the size of the symbol table stack to determine how far the symbol needs to be indented. Additionally, you also need to include the correct block number for each symbol.</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<p><strong>Step 2: Annotate AST tree with attributes</strong></p>
+<p>&nbsp;</p>
+<p>Some nodes in the program such as statements do not hold any semantic information for this assignment. However, expression nodes should be annotated with semantic information about its type and additional metadata. Figure 1 in the assignment lists the rules for the resulting attributes of a node. For example, a <tt>'+'</tt> node should always have the <tt>ATTR_int</tt> and the <tt>ATTR_vreg</tt> attributes set to indicate that its type is an int which might be important for its parent node. (Additionally, <tt>ATTR_vreg</tt> is an attribute used for code generation in assignment 5 to assign its result to a virtual register.)</p>
+<p>&nbsp;</p>
+<p>After implementing this step, the AST as printed to the <tt>.ast</tt> file should now also include attributes (and block numbers) for each node.</p>
+<p>&nbsp;</p>
+<p><strong>Step 3: Type Checking</strong></p>
+<p>&nbsp;</p>
+<p>This step depends on the previous two steps but can be done during the same traversal. As with the previous step, Figure 1 in the assignment description lists many of the important type checking rules. For example, when type checking a <tt>'+'</tt> node, you should check that both child nodes have the <tt>ATTR_int</tt> attribute. If this is <em>not</em> the case, your program should print a type error message and that the compilation failed with a non-zero exit status.</p>
+<p>&nbsp;</p>
+<p>I will not go into detail here but there are many caveats and things to consider, such as type checks for the return statement, checking that two types are compatible and checking that the function call argument types match the types of the function parameter in its definition. To give a sense of possible implementation strategies, the following code sketches type checking for function calls:</p>
+<p>&nbsp;</p>
+<p>&nbsp;</p>
+<pre style="white-space: -moz-pre-wrap;white-space: -o-pre-wrap;white-space: pre-wrap;word-wrap: break-word;">bool compatible(attr_bitset left, attr_bitset right) {
+&nbsp; return (left[ATTR_array] &amp;&amp; right[ATTR_null]) ||
+         (left[ATTR_null] &amp;&amp; right[ATTR_array]) ||
+         ...
+}
+
+void semantic_analysis(astree* node) {
+  ...
+&nbsp; case TOK_CALL: {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; symbol* s = lookup(node-&gt;children[0]-&gt;lexinfo);
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; if (s == nullptr) {
+        errllocprintf(node-&gt;lloc, "Undefined identifier: %s\n", node-&gt;children[0]-&gt;lexinfo-&gt;c_str());
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } else if (node-&gt;children.size() != 1 + s-&gt;parameters-&gt;size()) {
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; errllocprintf(node-&gt;lloc, "Wrong number of arguments!%s\n", "");
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; } else {
+        // check that call argument and parameter have compatible types
+        ...
+      }
+  }
+  ...
+}</pre>
+<p>&nbsp;</p>
+<p>This assignment is fairly complicated and long for such a short time period but I hope this summary helps at least a little bit. You can always ask additionally questions here on Piazza or come to the lab sections if anything is unclear.</p></div>

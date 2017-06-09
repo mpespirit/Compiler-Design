@@ -19,6 +19,7 @@ using namespace std;
 #include "string_set.h"
 #include "lyutils.h"
 #include "symbol_table.h"
+#include "emitter.h"
 
 const string CPP = "/usr/bin/cpp";
 constexpr size_t LINESIZE = 1024;
@@ -26,12 +27,11 @@ string command;
 int d_flag = 0; //-D option flag
 char* d_arg; //-D option args
 size_t next_block = 1;
-//symbol_table* global;// = new symbol_table
 
 vector<symbol_table*> symbol_stack;
 vector<size_t> block_stack;
 
-
+// Function Declarations
 char* change_ext(char* name, auto ext);
 void cpp_popen(const char* filename);
 void cpp_pclose();
@@ -105,6 +105,9 @@ void cpp_popen(const char* filename){
       }
       lexer::newfilename (command);
       
+      char* sym = change_ext(program, ".sym");
+      fSym = fopen(sym, "w");
+      
       char* tok = change_ext(program, ".tok");
       fTok = fopen(tok, "w");      
       int pVal = yyparse(); 
@@ -119,13 +122,21 @@ void cpp_popen(const char* filename){
       FILE* fAst = fopen(ast, "w");
       astree::print(fAst, parser::root, 0);
 
+      // assembly language .oil file
+      char* ass = change_ext(program, ".oil");
+      FILE* fAss = fopen(ass, "w");
+
       //attempt to build symbol table
-      block_stack.push_back( 0 );
+      block_stack.push_back(0);
+      symbol_stack.push_back( new symbol_table );
       semantic_analysis(parser::root);
+
+      emit_sm_code (parse::root); 
 
       fclose(fStr);
       fclose(fTok);
       fclose(fAst);
+      fclose(fSym);
    }
 }
 
